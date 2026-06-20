@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cornice — Property management, drawn to scale.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blueprint: #15324F;
+    --blueprint-deep: #0E2438;
+    --blueprint-line: #B9D3E8;
+    --paper: #FAF7F0;
+    --paper-dim: #F1ECE1;
+    --ink: #1E2125;
+    --slate: #5B6670;
+    --brass: #A8783C;
+    --brass-light: #C9974F;
+    --rule: #D8D0BD;
+
+    --display: 'Fraunces', serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    font-family: var(--body);
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+  }
+  img, svg{ display:block; max-width:100%; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family: inherit; cursor:pointer; border:none; background:none; }
+
+  :focus-visible{
+    outline: 2px solid var(--brass);
+    outline-offset: 3px;
+  }
+
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ---------- Ruler divider ---------- */
+  .ruler{
+    height: 22px;
+    width:100%;
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--rule) 0, var(--rule) 1px,
+      transparent 1px, transparent 40px
+    );
+    background-position: 0 0;
+    background-size: 100% 12px;
+    background-repeat: no-repeat;
+    border-bottom: 1px solid var(--rule);
+    opacity: .8;
+  }
+  .ruler.on-blueprint{
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--blueprint-line) 0, var(--blueprint-line) 1px,
+      transparent 1px, transparent 40px
+    );
+    border-bottom: 1px solid rgba(185,211,232,0.35);
+    opacity:.4;
+  }
+
+  /* ---------- Nav ---------- */
+  .nav{
+    position: sticky;
+    top:0;
+    z-index: 50;
+    background: rgba(250,247,240,0.92);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav .wrap{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height: 76px;
+  }
+  .brand{
+    font-family: var(--mono);
+    font-size: 18px;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .brand .mark{
+    width:10px;height:10px;
+    border:1.5px solid var(--ink);
+    transform: rotate(45deg);
+    display:inline-block;
+  }
+  .nav-links{
+    display:flex;
+    gap: 36px;
+    font-size: 15px;
+    color: var(--slate);
+  }
+  .nav-links a:hover{ color: var(--ink); }
+  .nav-actions{ display:flex; align-items:center; gap:20px; }
+  .nav-actions .signin{ font-size:15px; color:var(--slate); }
+  .nav-actions .signin:hover{ color:var(--ink); }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 12px 22px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 2px;
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .btn-brass{
+    background: var(--brass);
+    color: var(--paper);
+  }
+  .btn-brass:hover{ background: var(--brass-light); transform: translateY(-1px); }
+  .btn-outline{
+    border: 1px solid var(--ink);
+    color: var(--ink);
+  }
+  .btn-outline:hover{ background: var(--ink); color: var(--paper); }
+  .btn-ghost-light{
+    color: var(--paper);
+    border: 1px solid rgba(250,247,240,0.4);
+  }
+  .btn-ghost-light:hover{ background: rgba(250,247,240,0.12); }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    background: var(--blueprint);
+    color: var(--paper);
+    position: relative;
+    overflow:hidden;
+    padding-bottom: 0;
+  }
+  .hero-grid-bg{
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(185,211,232,0.07) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(90deg, rgba(185,211,232,0.07) 0 1px, transparent 1px 64px);
+    pointer-events:none;
+  }
+  .hero-inner{
+    position:relative;
+    display:grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 40px;
+    align-items:center;
+    padding: 88px 0 60px;
+  }
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brass-light);
+    margin: 0 0 22px;
+    display:flex;
+    align-items:center;
+    gap: 12px;
+  }
+  .eyebrow::before{
+    content:'';
+    width: 26px; height:1px;
+    background: var(--brass-light);
+    display:inline-block;
+  }
+  .hero h1{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(38px, 5.4vw, 62px);
+    line-height: 1.08;
+    margin: 0 0 22px;
+    letter-spacing: -0.01em;
+  }
+  .hero h1 em{
+    font-style: italic;
+    font-weight: 500;
+    color: var(--brass-light);
+  }
+  .hero p.lead{
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--blueprint-line);
+    max-width: 480px;
+    margin: 0 0 34px;
+  }
+  .hero-ctas{ display:flex; gap:16px; flex-wrap:wrap; }
+
+  .hero-art{
+    position:relative;
+    display:flex;
+    justify-content:center;
+  }
+  .hero-art svg{ width: 100%; max-width: 380px; }
+  .elevation-line{
+    fill:none;
+    stroke: var(--blueprint-line);
+    stroke-width: 1.6;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    pathLength: 1;
+  }
+  .elevation-fill-accent{
+    fill: var(--brass);
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .elevation-line{ animation: draw 1.4s ease forwards; }
+    .elevation-fill-accent{ animation: fadeIn .6s ease forwards; animation-delay: 1.5s; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .elevation-line{ stroke-dashoffset: 0; }
+    .elevation-fill-accent{ opacity: 1; }
+  }
+  @keyframes draw{ to{ stroke-dashoffset: 0; } }
+  @keyframes fadeIn{ to{ opacity: 1; } }
+
+  .d0{ animation-delay: 0s !important; }
+  .d1{ animation-delay: .12s !important; }
+  .d2{ animation-delay: .24s !important; }
+  .d3{ animation-delay: .36s !important; }
+  .d4{ animation-delay: .48s !important; }
+  .d5{ animation-delay: .60s !important; }
+  .d6{ animation-delay: .72s !important; }
+  .d7{ animation-delay: .84s !important; }
+
+  /* ---------- Sheet section headers ---------- */
+  .sheet-label{
+    display:flex;
+    align-items:baseline;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .sheet-label .num{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.1em;
+    color: var(--brass);
+    border: 1px solid var(--brass);
+    padding: 3px 8px;
+  }
+  .sheet-label .title{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+  .sheet-label.on-blueprint .num{ color: var(--brass-light); border-color: var(--brass-light); }
+  .sheet-label.on-blueprint .title{ color: var(--blueprint-line); }
+
+  section.block{ padding: 96px 0; }
+  section.block.tight{ padding: 80px 0; }
+
+  h2.section-title{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(28px, 3.4vw, 40px);
+    line-height: 1.18;
+    margin: 0 0 18px;
+    max-width: 640px;
+  }
+  p.section-body{
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--slate);
+    max-width: 560px;
+    margin: 0 0 0;
+  }
+
+  /* ---------- Problem ---------- */
+  .problem-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: start;
+    margin-top: 56px;
+  }
+  .scatter-cards{
+    display:grid;
+    gap: 16px;
+  }
+  .scatter-card{
+    border: 1px solid var(--rule);
+    background: var(--paper-dim);
+    padding: 18px 20px;
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    font-size: 15px;
+    color: var(--slate);
+  }
+  .scatter-card .ic{ flex-shrink:0; width:28px; height:28px; }
+  .scatter-card strong{ color: var(--ink); font-weight: 600; }
+
+  /* ---------- Features ---------- */
+  .feature-grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-top: 56px;
+  }
+  .feature-card{
+    background: var(--paper);
+    padding: 38px 36px;
+  }
+  .feature-card .ic{
+    width: 40px; height:40px;
+    margin-bottom: 22px;
+    color: var(--brass);
+  }
+  .feature-card h3{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 21px;
+    margin: 0 0 10px;
+  }
+  .feature-card p{
+    font-size: 15.5px;
+    color: var(--slate);
+    line-height: 1.6;
+    margin:0;
+  }
+
+  /* ---------- How it works (on blueprint) ---------- */
+  .how-section{
+    background: var(--blueprint-deep);
+    color: var(--paper);
+  }
+  .how-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-top: 56px;
+  }
+  .how-step{
+    padding: 0 32px 0 0;
+    border-left: 1px solid rgba(185,211,232,0.25);
+    padding-left: 32px;
+  }
+  .how-step:first-child{ border-left:none; padding-left:0; }
+  .how-step .step-num{
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--brass-light);
+    margin-bottom: 14px;
+    letter-spacing: 0.08em;
+  }
+  .how-step h3{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 22px;
+    margin: 0 0 10px;
+  }
+  .how-step p{
+    font-size: 15.5px;
+    color: var(--blueprint-line);
+    line-height: 1.6;
+    margin:0;
+  }
+  .how-section h2.section-title, .how-section p.section-body{ color: var(--paper); }
+  .how-section p.section-body{ color: var(--blueprint-line); }
+
+  /* ---------- Stats ---------- */
+  .stats-bar{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 56px;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .stat{
+    padding: 36px 24px;
+    text-align:left;
+    border-left: 1px solid var(--rule);
+  }
+  .stat:first-child{ border-left: none; }
+  .stat .num{
+    font-family: var(--mono);
+    font-size: clamp(32px, 4vw, 46px);
+    color: var(--brass);
+    font-weight: 500;
+    line-height:1;
+    margin-bottom: 10px;
+  }
+  .stat .label{
+    font-size: 14.5px;
+    color: var(--slate);
+    line-height:1.5;
+    max-width: 220px;
+  }
+
+  /* ---------- Testimonial ---------- */
+  .testimonial{
+    max-width: 760px;
+    margin: 56px auto 0;
+    text-align:center;
+  }
+  .testimonial blockquote{
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(22px, 2.6vw, 30px);
+    line-height: 1.4;
+    margin: 0 0 28px;
+    color: var(--ink);
+  }
+  .testimonial .quoter{
+    font-family: var(--mono);
+    font-size: 13.5px;
+    color: var(--slate);
+    letter-spacing: 0.03em;
+  }
+  .testimonial .quoter strong{ color: var(--ink); }
+
+  /* ---------- Pricing ---------- */
+  .price-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    margin-top: 56px;
+  }
+  .price-card{
+    border: 1px solid var(--rule);
+    padding: 32px 28px;
+    display:flex;
+    flex-direction:column;
+    background: var(--paper);
+  }
+  .price-card.featured{
+    border-color: var(--brass);
+    box-shadow: 0 0 0 1px var(--brass);
+    position:relative;
+  }
+  .price-card.featured::before{
+    content: 'MOST CHOSEN';
+    position:absolute;
+    top:-11px; left: 28px;
+    background: var(--brass);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+  }
+  .price-card h3{
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin: 0 0 18px;
+  }
+  .price-card .price{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 36px;
+    margin-bottom: 6px;
+  }
+  .price-card .price span{
+    font-family: var(--body);
+    font-size: 14px;
+    color: var(--slate);
+    font-weight: 400;
+  }
+  .price-card .unit-desc{
+    font-size: 14px;
+    color: var(--slate);
+    margin-bottom: 26px;
+  }
+  .price-card ul{
+    list-style:none;
+    margin: 0 0 28px;
+    padding: 0;
+    flex-grow:1;
+  }
+  .price-card li{
+    font-size: 14.5px;
+    color: var(--ink);
+    padding: 9px 0;
+    border-top: 1px solid var(--rule);
+    display:flex;
+    gap: 10px;
+  }
+  .price-card li:first-child{ border-top:none; }
+  .price-card .btn{ justify-content:center; width:100%; }
+
+  /* ---------- Final CTA ---------- */
+  .final-cta{
+    background: var(--blueprint);
+    color: var(--paper);
+    text-align:center;
+    position: relative;
+    overflow:hidden;
+  }
+  .final-cta .wrap{ position:relative; padding: 96px 32px; }
+  .final-cta h2{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(30px, 4vw, 44px);
+    margin: 0 0 18px;
+  }
+  .final-cta h2 em{ font-style:italic; color: var(--brass-light); font-weight:500; }
+  .final-cta p{
+    font-size: 16.5px;
+    color: var(--blueprint-line);
+    max-width: 480px;
+    margin: 0 auto 34px;
+  }
+  .final-cta-actions{ display:flex; justify-content:center; gap:16px; flex-wrap:wrap; }
+
+  /* ---------- Footer ---------- */
+  footer{
+    background: var(--blueprint-deep);
+    color: var(--blueprint-line);
+    padding: 56px 0 32px;
+  }
+  .footer-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap: 40px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid rgba(185,211,232,0.18);
+  }
+  .footer-top .brand{ color: var(--paper); }
+  .footer-top .brand .mark{ border-color: var(--paper); }
+  .footer-cols{ display:flex; gap:64px; flex-wrap:wrap; }
+  .footer-col h4{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper);
+    margin: 0 0 14px;
+  }
+  .footer-col a{
+    display:block;
+    font-size: 14.5px;
+    color: var(--blueprint-line);
+    margin-bottom: 10px;
+  }
+  .footer-col a:hover{ color: var(--paper); }
+  .footer-bottom{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding-top: 28px;
+    font-size: 13px;
+    color: rgba(185,211,232,0.6);
+    flex-wrap:wrap;
+    gap: 12px;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px){
+    .hero-inner{ grid-template-columns: 1fr; padding: 56px 0 40px; }
+    .hero-art{ order: -1; max-width: 260px; margin: 0 auto 12px; }
+    .problem-grid{ grid-template-columns: 1fr; gap: 36px; }
+    .feature-grid{ grid-template-columns: 1fr; }
+    .how-grid{ grid-template-columns: 1fr; gap: 32px; }
+    .how-step{ border-left:none; padding-left:0; border-top: 1px solid rgba(185,211,232,0.25); padding-top: 28px; }
+    .how-step:first-child{ border-top:none; padding-top:0; }
+    .stats-bar{ grid-template-columns: 1fr; }
+    .stat{ border-left:none; border-top: 1px solid var(--rule); }
+    .stat:first-child{ border-top:none; }
+    .price-grid{ grid-template-columns: 1fr; }
+    .nav-links{ display:none; }
+  }
+  @media (max-width: 560px){
+    .wrap{ padding: 0 20px; }
+    section.block{ padding: 64px 0; }
+    .hero-ctas, .final-cta-actions{ flex-direction:column; align-items:stretch; }
+    .footer-cols{ gap: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a href="#" class="brand"><span class="mark"></span>CORNICE</a>
+    <nav class="nav-links">
+      <a href="#features">Product</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="#" class="signin">Sign in</a>
+      <a href="#cta" class="btn btn-outline">Get a demo</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-grid-bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="hero-inner">
+      <div>
+        <p class="eyebrow">Property management, redrawn</p>
+        <h1>Run every building from <em>one set of plans.</em></h1>
+        <p class="lead">Cornice brings rent, maintenance, and tenants into a single system — so nothing falls through the cracks across your portfolio.</p>
+        <div class="hero-ctas">
+          <a href="#cta" class="btn btn-brass">Get a demo</a>
+          <a href="#how" class="btn btn-ghost-light">See how it works</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <svg viewBox="0 0 400 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line drawing of a building elevation with a cornice ledge at the top">
+          <!-- ground line -->
+          <line class="elevation-line d0" x1="20" y1="460" x2="380" y2="460" pathLength="1"/>
+          <!-- facade -->
+          <rect class="elevation-line d1" x="70" y="90" width="260" height="370" pathLength="1"/>
+          <!-- cornice ledge -->
+          <line class="elevation-line d0" x1="55" y1="90" x2="345" y2="90" pathLength="1"/>
+          <line class="elevation-line d0" x1="62" y1="78" x2="338" y2="78" pathLength="1"/>
+          <line class="elevation-line d1" x1="55" y1="90" x2="62" y2="78" pathLength="1"/>
+          <line class="elevation-line d1" x1="345" y1="90" x2="338" y2="78" pathLength="1"/>
+          <!-- windows row 1 -->
+          <rect class="elevation-line d2" x="92" y="118" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d2" x="150" y="118" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d2" x="208" y="118" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d2" x="266" y="118" width="40" height="52" pathLength="1"/>
+          <!-- windows row 2 -->
+          <rect class="elevation-line d3" x="92" y="190" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d3" x="150" y="190" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d3" x="208" y="190" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d3" x="266" y="190" width="40" height="52" pathLength="1"/>
+          <!-- windows row 3 -->
+          <rect class="elevation-line d4" x="92" y="262" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d4" x="150" y="262" width="40" height="52" pathLength="1"/>
+          <rect class="elevation-line d4" x="266" y="262" width="40" height="52" pathLength="1"/>
+          <!-- door -->
+          <rect class="elevation-line d5" x="190" y="380" width="42" height="80" pathLength="1"/>
+          <line class="elevation-line d5" x1="190" y1="412" x2="232" y2="412" pathLength="1"/>
+          <!-- accent window, lit -->
+          <rect class="elevation-fill-accent" x="208" y="263" width="40" height="50"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="ruler on-blueprint" aria-hidden="true"></div>
+</section>
+
+<section class="block" id="problem">
+  <div class="wrap">
+    <div class="sheet-label"><span class="num">A-101</span><span class="title">The problem</span></div>
+    <div class="problem-grid">
+      <div>
+        <h2 class="section-title">Your portfolio lives in too many places.</h2>
+        <p class="section-body">Rent in a spreadsheet. Maintenance requests in a group text. Lease documents in an email thread from three years ago. Every property adds another thing to track somewhere else.</p>
+      </div>
+      <div class="scatter-cards">
+        <div class="scatter-card">
+          <svg class="ic" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="22" height="20" rx="1"/><line x1="3" y1="10" x2="25" y2="10"/><line x1="9" y1="10" x2="9" y2="24"/><line x1="15" y1="10" x2="15" y2="24"/><line x1="21" y1="10" x2="21" y2="24"/></svg>
+          <span><strong>A spreadsheet</strong> for rent that someone has to update by hand.</span>
+        </div>
+        <div class="scatter-card">
+          <svg class="ic" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 6h18v14H12l-5 5V6z"/></svg>
+          <span><strong>A group text</strong> where maintenance requests go to die.</span>
+        </div>
+        <div class="scatter-card">
+          <svg class="ic" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 3h11l5 5v17H7z"/><path d="M18 3v5h5"/></svg>
+          <span><strong>A folder of leases</strong> nobody can find at renewal time.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="ruler" aria-hidden="true"></div></div>
+
+<section class="block" id="features">
+  <div class="wrap">
+    <div class="sheet-label"><span class="num">A-102</span><span class="title">What's included</span></div>
+    <h2 class="section-title">Everything a landlord actually touches.</h2>
+    <p class="section-body">No modules to bolt on later. Every plan includes the four things that take up your week.</p>
+  </div>
+  <div class="feature-grid wrap" style="margin-top:56px;">
+    <div class="feature-card">
+      <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="20" cy="30" rx="13" ry="5"/><ellipse cx="20" cy="23" rx="13" ry="5"/><ellipse cx="20" cy="16" rx="13" ry="5"/><path d="M7 16v14M33 16v14"/></svg>
+      <h3>Rent collection</h3>
+      <p>Tenants pay online from their portal. You see who's paid, who's late, and what's owed across every unit — automatically.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M24 6l-9 9 2 2-9 9 4 4 9-9 2 2 9-9c1.5-3 1-6-2-8-2.5-2.5-5.5-2-6 0z"/></svg>
+      <h3>Maintenance requests</h3>
+      <p>Tenants submit a request with photos in seconds. You assign it to a vendor and track it through to done, in one place.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 8h28v18H16l-6 6V8z"/><line x1="11" y1="16" x2="29" y2="16"/><line x1="11" y1="21" x2="23" y2="21"/></svg>
+      <h3>Tenant communication</h3>
+      <p>One message thread per unit for announcements, lease renewals, and questions — no more digging through old emails.</p>
+    </div>
+    <div class="feature-card">
+      <svg class="ic" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="6" y1="34" x2="34" y2="34"/><rect x="10" y="22" width="5" height="12"/><rect x="19" y="14" width="5" height="20"/><rect x="28" y="18" width="5" height="16"/></svg>
+      <h3>Financial reporting</h3>
+      <p>Income, expenses, and occupancy by property or across your whole portfolio. Export it whenever your accountant asks.</p>
+    </div>
+  </div>
+</section>
+
+<section class="how-section" id="how">
+  <div class="ruler on-blueprint" aria-hidden="true"></div>
+  <div class="wrap block">
+    <div class="sheet-label on-blueprint"><span class="num">A-103</span><span class="title">How it works</span></div>
+    <h2 class="section-title">Up and running in an afternoon.</h2>
+    <p class="section-body">No data migration team required.</p>
+    <div class="how-grid">
+      <div class="how-step">
+        <p class="step-num">STEP 1</p>
+        <h3>Add your properties</h3>
+        <p>Import your units, leases, and tenant contacts from a spreadsheet — or start fresh in a few minutes per unit.</p>
+      </div>
+      <div class="how-step">
+        <p class="step-num">STEP 2</p>
+        <h3>Invite your tenants</h3>
+        <p>Each tenant gets a portal for rent, requests, and documents. They set it up themselves; you don't.</p>
+      </div>
+      <div class="how-step">
+        <p class="step-num">STEP 3</p>
+        <h3>Let it run</h3>
+        <p>Reminders, late fees, and monthly reports happen on their own. You step in only when something needs you.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block tight">
+  <div class="wrap">
+    <div class="sheet-label"><span class="num">A-104</span><span class="title">In the field</span></div>
+    <h2 class="section-title">Portfolios run differently on Cornice.</h2>
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="num">94%</div>
+        <div class="label">of rent collected by the 3rd of the month, across Cornice portfolios.</div>
+      </div>
+      <div class="stat">
+        <div class="num">6.2 hrs</div>
+        <div class="label">saved per property, per week, on admin that used to be manual.</div>
+      </div>
+      <div class="stat">
+        <div class="num">1,400+</div>
+        <div class="label">properties currently managed end-to-end on Cornice.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block tight">
+  <div class="wrap">
+    <div class="testimonial">
+      <blockquote>"We went from four spreadsheets and a shoebox of receipts to one dashboard. I heard about a leaking roof from the tenant portal — before it became a ceiling repair."</blockquote>
+      <div class="quoter"><strong>MARA OKAFOR</strong> — Owner, Okafor Realty Group (18 units)</div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><div class="ruler" aria-hidden="true"></div></div>
+
+<section class="block" id="pricing">
+  <div class="wrap">
+    <div class="sheet-label"><span class="num">A-105</span><span class="title">Pricing</span></div>
+    <h2 class="section-title">Priced by unit, not by guesswork.</h2>
+    <p class="section-body">Every tier includes rent collection, maintenance, messaging, and reporting. You only pay more as your portfolio grows.</p>
+    <div class="price-grid">
+      <div class="price-card">
+        <h3>Starter</h3>
+        <div class="price">$1.50<span> / unit / mo</span></div>
+        <div class="unit-desc">For 1–10 units</div>
+        <ul>
+          <li>Online rent collection</li>
+          <li>Maintenance tracking</li>
+          <li>Tenant portal</li>
+          <li>Email support</li>
+        </ul>
+        <a href="#" class="btn btn-outline">Start free trial</a>
+      </div>
+      <div class="price-card featured">
+        <h3>Growth</h3>
+        <div class="price">$2.25<span> / unit / mo</span></div>
+        <div class="unit-desc">For 11–50 units</div>
+        <ul>
+          <li>Everything in Starter</li>
+          <li>Automated late fees</li>
+          <li>Owner & vendor portals</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="#" class="btn btn-brass">Start free trial</a>
+      </div>
+      <div class="price-card">
+        <h3>Portfolio</h3>
+        <div class="price">Custom</div>
+        <div class="unit-desc">For 50+ units</div>
+        <ul>
+          <li>Everything in Growth</li>
+          <li>Multi-entity accounting</li>
+          <li>API access</li>
+          <li>Dedicated account manager</li>
+        </ul>
+        <a href="#" class="btn btn-outline">Talk to sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta" id="cta">
+  <div class="hero-grid-bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <h2>Ready to put your portfolio on <em>one set of plans?</em></h2>
+    <p>See Cornice with your own properties in a 20-minute walkthrough. No spreadsheet required.</p>
+    <div class="final-cta-actions">
+      <a href="#" class="btn btn-brass">Get a demo</a>
+      <a href="#" class="btn btn-ghost-light">Talk to sales</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <a href="#" class="brand"><span class="mark"></span>CORNICE</a>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#">About</a>
+          <a href="#">Careers</a>
+          <a href="#">Contact</a>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <a href="#">Help center</a>
+          <a href="#">Status</a>
+          <a href="#">Sign in</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Cornice. Built for the people who run real buildings.</span>
+      <span>Sheet A-000 — Cover</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
